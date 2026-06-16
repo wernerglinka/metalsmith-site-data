@@ -216,5 +216,5 @@ MIT © [Werner Glinka](https://github.com/wernerglinka)
 [npm-url]: https://www.npmjs.com/package/metalsmith-site-data
 [license-badge]: https://img.shields.io/github/license/wernerglinka/metalsmith-site-data
 [license-url]: LICENSE
-[coverage-badge]: https://img.shields.io/badge/test%20coverage-100.0%25-brightgreen
+[coverage-badge]: https://img.shields.io/badge/test%20coverage-025-red
 [coverage-url]: https://github.com/wernerglinka/metalsmith-site-data/actions/workflows/test.yml
