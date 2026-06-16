@@ -1,7 +1,7 @@
 /**
  * metalsmith-site-data
  *
- * Emit read-only build artifacts that an in-site admin editor fetches to browse
+ * Emit read-only build artifacts that an in-situ admin editor fetches to browse
  * and author a structured-content site. Two plugins, placed at different points
  * in the pipeline because they snapshot different things:
  *

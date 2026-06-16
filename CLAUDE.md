@@ -6,7 +6,7 @@ rationale in [docs/THEORY.md](docs/THEORY.md) — don't duplicate them here.
 
 ## Project Overview
 
-Emit read-only build artifacts (pages.json and site-data.json) that an in-site admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.
+Emit read-only build artifacts (pages.json and site-data.json) that an in-situ admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.
 
 ESM-only Metalsmith plugin, published directly from `src/` (no build step),
 targeting Node.js 22+. CommonJS consumers can still `require()` it via

@@ -6,9 +6,9 @@
 [![test coverage][coverage-badge]][coverage-url]
 [![Known Vulnerabilities](https://snyk.io/test/npm/metalsmith-site-data/badge.svg)](https://snyk.io/test/npm/metalsmith-site-data)
 
-> Emit read-only build artifacts (pages.json and site-data.json) that an in-site admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.
+> Emit read-only build artifacts (pages.json and site-data.json) that an in-situ admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.
 
-Emit read-only build artifacts that an in-site admin editor fetches to browse and author a structured-content site. Two plugins, exported separately because they belong at different points in the build:
+Emit read-only build artifacts that an in-situ admin editor fetches to browse and author a structured-content site. Two plugins, exported separately because they belong at different points in the build:
 
 - **`pagesArtifact()`** → `assets/pages.json`: every page's source frontmatter, so the editor can list and open existing pages.
 - **`dataArtifact()`** → `assets/site-data.json`: the `metadata.data` namespace plus collection membership, so sections that consume data files or collections can be authored and previewed against the site's real data.

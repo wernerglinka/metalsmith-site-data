@@ -8,7 +8,7 @@ plugin.
 
 ## 1. The job
 
-The plugin emits read-only JSON artifacts into the build that an in-site admin
+The plugin emits read-only JSON artifacts into the build that an in-situ admin
 editor fetches statically to browse and author a structured-content site. It is
 the build-time half of an editor whose runtime half is a static page; there is
 no server.
