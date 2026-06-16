@@ -4,7 +4,8 @@
 [![npm: version][npm-badge]][npm-url]
 [![license: MIT][license-badge]][license-url]
 [![test coverage][coverage-badge]][coverage-url]
-[![Known Vulnerabilities](https://snyk.io/test/npm/metalsmith-site-data/badge.svg)](https://snyk.io/test/npm/metalsmith-site-data)
+
+> This Metalsmith plugin is under active development. The API is stable, but breaking changes may occur before reaching 1.0.0.
 
 > Emit read-only build artifacts (pages.json and site-data.json) that an in-situ admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.
 
