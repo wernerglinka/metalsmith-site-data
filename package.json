@@ -4,7 +4,8 @@
   "description": "Emit read-only build artifacts (pages.json and site-data.json) that an in-site admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.",
   "keywords": [
     "metalsmith",
-    "metalsmith-plugin"    ],
+    "metalsmith-plugin"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/wernerglinka/metalsmith-site-data"
@@ -17,7 +18,11 @@
   "author": "Werner Glinka <werner@glinka.co>",
   "type": "module",
   "exports": "./src/index.js",
-  "files": ["src/**/*.js", "LICENSE", "README.md"],
+  "files": [
+    "src/**/*.js",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "changelog": "auto-changelog -u --commit-limit false --ignore-commit-pattern '^((dev|chore|ci):|Release)'",
     "test": "node --test --test-timeout=15000 'test/**/*.test.js'",

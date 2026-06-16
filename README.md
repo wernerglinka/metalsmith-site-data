@@ -8,9 +8,12 @@
 
 > Emit read-only build artifacts (pages.json and site-data.json) that an in-site admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.
 
-## Features
+Emit read-only build artifacts that an in-site admin editor fetches to browse and author a structured-content site. Two plugins, exported separately because they belong at different points in the build:
 
-Add features here...
+- **`pagesArtifact()`** → `assets/pages.json`: every page's source frontmatter, so the editor can list and open existing pages.
+- **`dataArtifact()`** → `assets/site-data.json`: the `metadata.data` namespace plus collection membership, so sections that consume data files or collections can be authored and previewed against the site's real data.
+
+The editor fetches both statically; there is no server component.
 
 ## Installation
 
@@ -18,86 +21,67 @@ Add features here...
 npm install metalsmith-site-data
 ```
 
-## Requirements
-
-Add requirements here...
-
 ## Usage
 
 ```js
 import Metalsmith from 'metalsmith';
-import siteData from 'metalsmith-site-data';
+import drafts from '@metalsmith/drafts';
+import collections from '@metalsmith/collections';
+import permalinks from '@metalsmith/permalinks';
+import { pagesArtifact, dataArtifact } from 'metalsmith-site-data';
 
 Metalsmith(import.meta.dirname)
-  .use(siteData({
-    // options
-  }))
+  .use(drafts())
+  .use(pagesArtifact())            // before collections/permalinks
+  .use(collections({ blog: { pattern: 'blog/*.md' } }))
+  .use(dataArtifact())             // after collections, before permalinks
+  .use(permalinks())
   .build((err) => {
     if (err) throw err;
   });
 ```
+
+### Placement matters
+
+The two artifacts snapshot different stages of the build, so they go in different places:
+
+- **`pagesArtifact()`** must run **after `drafts()`** (so `draft: true` pages are excluded) and **before `collections()` / `permalinks()` / `layouts()`**, so the snapshot is the clean authored frontmatter (no injected collection or card data) and the file keys are the source `.md` paths the editor writes back to.
+- **`dataArtifact()`** must run **after `collections()`** (so collection membership is populated) and **before `permalinks()`** (so the member keys are still the source `.md` paths, matching `pages.json`).
+
+`dataArtifact()` reads `metalsmith.metadata().data`; populate it however your site already does (an inline loader, `@metalsmith/metadata`, etc.) before this plugin runs.
 
 ## Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `pattern` | `string \| string[]` | `'**/*'` | Pattern to match files. Uses Metalsmith's native pattern matching. |
-| `ignore` | `string \| string[]` | `[]` | Patterns to ignore files. |
+Both plugins take a single `dest` option, the output path within the build:
 
-## How It Works
+| Plugin | Option | Default |
+|--------|--------|---------|
+| `pagesArtifact` | `dest` | `'assets/pages.json'` |
+| `dataArtifact` | `dest` | `'assets/site-data.json'` |
 
-Add how it works explanation here...
+## Artifact shapes
 
-## Examples
+`pages.json` — a map of source path to authored frontmatter and body:
 
-Add examples here...
-
-### Basic Usage
-
-```js
-import Metalsmith from 'metalsmith';
-import siteData from 'metalsmith-site-data';
-
-Metalsmith(import.meta.dirname)
-  .source('./src')
-  .destination('./build')
-  .use(siteData())
-  .build((err) => {
-    if (err) throw err;
-    console.log('Build complete!');
-  });
+```json
+{
+  "blog/hello.md": {
+    "frontmatter": { "layout": "pages/sections.njk", "sections": [ ... ] },
+    "content": ""
+  }
+}
 ```
 
-### With Options
+`site-data.json` — the data namespace verbatim, plus each collection mapped to its ordered member source paths (the same keys as `pages.json`, so a consumer joins to it rather than duplicating entries):
 
-```js
-import Metalsmith from 'metalsmith';
-import siteData from 'metalsmith-site-data';
-
-Metalsmith(import.meta.dirname)
-  .source('./src')
-  .destination('./build')
-  .use(siteData({
-    pattern: ['**/*.html', '**/*.md'],
-    ignore: ['drafts/**/*']
-  }))
-  .build((err) => {
-    if (err) throw err;
-  });
+```json
+{
+  "data": { "author": [ { "name": "Ada Lovelace" } ], "site": { "title": "..." } },
+  "collections": { "blog": [ "blog/hello.md", "blog/world.md" ] }
+}
 ```
 
-
-## Debug
-
-To enable debug logs, set the DEBUG environment variable to `metalsmith-site-data*`:
-
-```javascript
-metalsmith.env('DEBUG', 'metalsmith-site-data*');
-```
-
-## CLI Usage
-
-Add CLI usage instructions here...
+The pure builder functions (`buildPagesArtifact(files)` and `buildDataArtifact(files, metadata)`) are also exported, for testing or custom wiring.
 
 ## Testing and Coverage
 
@@ -116,7 +100,7 @@ This project maintains 80% code coverage across branches, lines, functions, and 
 
 ## Automated CI/CD
 
-This plugin includes professional GitHub workflows for automated quality assurance:
+This plugin includes GitHub workflows for automated testing and review:
 
 ### GitHub Actions Workflows
 
@@ -127,7 +111,7 @@ This plugin includes professional GitHub workflows for automated quality assuran
 
 - **`.github/workflows/claude-code.yml`**: AI-assisted code review
   - Automatic code review on pull requests
-  - Integration with Claude Code for intelligent feedback
+  - Integration with Claude Code for automated feedback
   - Requires `ANTHROPIC_API_KEY` secret in repository settings
 
 ### Coverage Badges
@@ -142,7 +126,7 @@ Coverage badges are automatically updated by the test workflow. The badge color 
 
 ## Release Management
 
-This plugin uses an improved release system that generates professional GitHub releases:
+This plugin uses an improved release system that generates GitHub releases:
 
 - **Clean Release Notes**: Each release shows only relevant changes
 - **Automatic Formatting**: Proper GitHub markdown with commit links
@@ -165,7 +149,7 @@ Since release notes are auto-generated from commit messages, write detailed comm
 ```bash
 feat: add HTML attribute minification support
 
-- Implement advanced attribute optimization algorithm
+- Implement the attribute optimization algorithm
 - Add support for preserving custom elements
 - Improve processing performance by 40% on large files
 - Add configuration option for selective attribute handling
@@ -224,13 +208,13 @@ docs: update usage examples with new API patterns
 
 ## License
 
-MIT © [Your Name](https://github.com/yourusername)
+MIT © [Werner Glinka](https://github.com/wernerglinka)
 
 [metalsmith-badge]: https://img.shields.io/badge/metalsmith-plugin-green.svg?longCache=true
 [metalsmith-url]: https://metalsmith.io
 [npm-badge]: https://img.shields.io/npm/v/metalsmith-site-data.svg
 [npm-url]: https://www.npmjs.com/package/metalsmith-site-data
-[license-badge]: https://img.shields.io/github/license/yourusername/metalsmith-site-data
+[license-badge]: https://img.shields.io/github/license/wernerglinka/metalsmith-site-data
 [license-url]: LICENSE
 [coverage-badge]: https://img.shields.io/badge/test%20coverage-100.0%25-brightgreen
-[coverage-url]: https://github.com/yourusername/metalsmith-site-data/actions/workflows/test.yml
+[coverage-url]: https://github.com/wernerglinka/metalsmith-site-data/actions/workflows/test.yml

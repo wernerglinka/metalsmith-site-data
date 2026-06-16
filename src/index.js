@@ -1,102 +1,121 @@
 /**
- * Metalsmith Native Methods
- * This plugin uses Metalsmith's built-in methods:
- * - metalsmith.match(patterns, files) for pattern matching
- * - metalsmith.debug(namespace) for debug logging
- * - metalsmith.path() for path operations
- * - metalsmith.source() and metalsmith.destination() for directories
- */
-import { normalizeOptions, validateFiles, deepMerge } from './utils/config.js';
-
-/**
- * Default options
- * @type {Object}
- * @property {string} pattern - Files to process (always exists after merge)
- * @property {string[]} ignore - Files to ignore (always exists after merge)
- * 
- * IMPORTANT: After deepMerge(defaults, userOptions), all default properties
- * are guaranteed to exist. User options can override values but cannot remove
- * properties. This means:
- * - pattern will NEVER be null or undefined
- * - ignore will NEVER be null or undefined
- */
-const defaults = {
-  pattern: '**/*',
-  ignore: [],
-};
-
-/**
- * Plugin options
- * @typedef {Object} Options
- * @property {string|string[]} pattern - Files to process
- * @property {string|string[]} ignore - Files to ignore
- */
-
-/**
- * Emit read-only build artifacts (pages.json and site-data.json) that an in-site admin editor consumes: a snapshot of page frontmatter, and the site's data namespace plus collection membership.
+ * metalsmith-site-data
  *
- * @param {Options} options - Plugin options
- * @returns {import('metalsmith').Plugin} Metalsmith plugin function
+ * Emit read-only build artifacts that an in-site admin editor fetches to browse
+ * and author a structured-content site. Two plugins, placed at different points
+ * in the pipeline because they snapshot different things:
+ *
+ * - `pagesArtifact()` -> assets/pages.json: every page's source frontmatter,
+ *   so the editor can browse and open existing pages. Run it AFTER drafts()
+ *   and BEFORE collections()/permalinks()/layouts(), so the snapshot is the
+ *   clean authored shape (no injected collection/card data) and the keys are
+ *   the source .md paths the editor writes back to.
+ *
+ * - `dataArtifact()` -> assets/site-data.json: the metadata.data namespace plus
+ *   collection membership, so sections that consume data files or collections
+ *   can be authored and previewed against the site's real data. Run it AFTER
+ *   collections() (so membership is populated) and BEFORE permalinks() (so the
+ *   member keys are still the source .md paths that key pages.json).
+ *
+ * Both are read-only snapshots written into the build; the editor fetches them
+ * statically with no server access. See README.md for the artifact shapes.
  */
-export default function siteData(options = {}) {
-  // Normalize options with defaults
-  const config = deepMerge(defaults, options);
-  
-  // Return the actual plugin function (two-phase pattern)
-  const metalsmithPlugin = async function (files, metalsmith, done) {
-    const debug = metalsmith.debug('metalsmith-site-data');
-    debug('Starting metalsmith-site-data with options:', config);
-    
-    try {
-      // Normalize and validate options
-      const normalizedOptions = normalizeOptions(config);
-      
-      // Get files to process
-      const filesToProcess = validateFiles(files, normalizedOptions, metalsmith);
-      
-      if (filesToProcess.length === 0) {
-        debug('No files to process');
-        return done();
-      }
-      
-      debug(`Processing ${filesToProcess.length} files`);
-      
-        // Process files
-        await Promise.all(
-          filesToProcess.map(async (filename) => {
-            try {
-              const file = files[filename];
-              debug(`Processing file: ${filename}`);
-              
-              
-              
-              
-              
-              
-              debug(`Successfully processed: ${filename}`);
-            } catch (error) {
-              debug(`Error processing ${filename}:`, error);
-              throw error;
-            }
-          })
-        );
-      
-      debug('metalsmith-site-data completed successfully');
-      done();
-    } catch (error) {
-      debug('metalsmith-site-data failed:', error);
-      done(error);
-    }
-  };
 
-  // Set function name for debugging (helps with stack traces and debugging)
-  Object.defineProperty(metalsmithPlugin, 'name', { 
-    value: 'siteDataPlugin',
-    configurable: true 
-  });
-  
-  return metalsmithPlugin;
+// Metalsmith file internals that are not authored frontmatter.
+const INTERNAL_KEYS = new Set(['contents', 'stats', 'mode']);
+
+/**
+ * Serialize a value and write it into the files object as a build artifact.
+ * @param {Object} files - The Metalsmith files object.
+ * @param {string} dest - The output path within the build.
+ * @param {*} value - The JSON-serializable artifact.
+ */
+function writeArtifact(files, dest, value) {
+  files[dest] = { contents: Buffer.from(JSON.stringify(value, null, 2), 'utf8') };
 }
 
+/**
+ * Build the { sourcePath: { frontmatter, content } } map from a Metalsmith
+ * files object. Pure. Only .md sources are included; the markdown body (usually
+ * empty for structured pages) rides along as `content` so the editor's
+ * hydration path (frontmatter + content) round-trips unchanged.
+ * @param {Object} files - The Metalsmith files object.
+ * @returns {Object} Map of source path to { frontmatter, content }.
+ */
+export function buildPagesArtifact(files) {
+  const pages = {};
+  for (const [filePath, file] of Object.entries(files)) {
+    if (!filePath.endsWith('.md')) {
+      continue;
+    }
+    const frontmatter = {};
+    for (const [key, value] of Object.entries(file)) {
+      if (INTERNAL_KEYS.has(key)) {
+        continue;
+      }
+      frontmatter[key] = value;
+    }
+    pages[filePath] = {
+      frontmatter,
+      content: file.contents ? file.contents.toString() : ''
+    };
+  }
+  return pages;
+}
 
+/**
+ * Build the { data, collections } artifact from a Metalsmith files object and
+ * metadata. Pure. `data` is the metadata.data namespace verbatim; `collections`
+ * maps each collection name to the ordered list of its member source paths
+ * (the same keys buildPagesArtifact emits), so a consumer joins to pages.json
+ * rather than duplicating entry frontmatter. Collection entries are the same
+ * file objects that are values in the files map, so membership is resolved by
+ * object identity.
+ * @param {Object} files - The Metalsmith files object.
+ * @param {Object} metadata - The Metalsmith metadata (has .data and .collections).
+ * @returns {Object} { data, collections }.
+ */
+export function buildDataArtifact(files, metadata) {
+  const meta = metadata || {};
+  const pathOf = new Map();
+  for (const [filePath, file] of Object.entries(files)) {
+    pathOf.set(file, filePath);
+  }
+  const collections = {};
+  for (const [name, entries] of Object.entries(meta.collections || {})) {
+    if (!Array.isArray(entries)) {
+      continue;
+    }
+    collections[name] = entries.map((entry) => pathOf.get(entry)).filter(Boolean);
+  }
+  return { data: meta.data || {}, collections };
+}
 
+/**
+ * Plugin: snapshot page frontmatter to a build artifact.
+ * @param {Object} [options]
+ * @param {string} [options.dest='assets/pages.json'] - Output path in the build.
+ * @returns {import('metalsmith').Plugin} Metalsmith plugin function.
+ */
+export function pagesArtifact(options = {}) {
+  const dest = options.dest || 'assets/pages.json';
+  return function metalsmithSiteDataPages(files, _metalsmith, done) {
+    writeArtifact(files, dest, buildPagesArtifact(files));
+    done();
+  };
+}
+
+/**
+ * Plugin: snapshot the data namespace and collection membership to a build
+ * artifact.
+ * @param {Object} [options]
+ * @param {string} [options.dest='assets/site-data.json'] - Output path in the build.
+ * @returns {import('metalsmith').Plugin} Metalsmith plugin function.
+ */
+export function dataArtifact(options = {}) {
+  const dest = options.dest || 'assets/site-data.json';
+  return function metalsmithSiteDataData(files, metalsmith, done) {
+    writeArtifact(files, dest, buildDataArtifact(files, metalsmith.metadata()));
+    done();
+  };
+}
