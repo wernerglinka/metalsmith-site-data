@@ -100,8 +100,14 @@ export function buildDataArtifact(files, metadata) {
 export function pagesArtifact(options = {}) {
   const dest = options.dest || 'assets/pages.json';
   return function metalsmithSiteDataPages(files, _metalsmith, done) {
-    writeArtifact(files, dest, buildPagesArtifact(files));
-    done();
+    try {
+      writeArtifact(files, dest, buildPagesArtifact(files));
+      done();
+    } catch (err) {
+      // JSON.stringify throws on circular refs or BigInt in frontmatter;
+      // surface it to Metalsmith instead of crashing the build.
+      done(err);
+    }
   };
 }
 
@@ -115,7 +121,13 @@ export function pagesArtifact(options = {}) {
 export function dataArtifact(options = {}) {
   const dest = options.dest || 'assets/site-data.json';
   return function metalsmithSiteDataData(files, metalsmith, done) {
-    writeArtifact(files, dest, buildDataArtifact(files, metalsmith.metadata()));
-    done();
+    try {
+      writeArtifact(files, dest, buildDataArtifact(files, metalsmith.metadata()));
+      done();
+    } catch (err) {
+      // JSON.stringify throws on circular refs or BigInt in the data namespace;
+      // surface it to Metalsmith instead of crashing the build.
+      done(err);
+    }
   };
 }
