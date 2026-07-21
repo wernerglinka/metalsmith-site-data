@@ -4,6 +4,7 @@
 [![npm: version][npm-badge]][npm-url]
 [![license: MIT][license-badge]][license-url]
 [![test coverage][coverage-badge]][coverage-url]
+[![ESM][modules-badge]][npm-url]
 
 > This Metalsmith plugin is under active development. The API is stable, but breaking changes may occur before reaching 1.0.0.
 
@@ -219,3 +220,4 @@ MIT © [Werner Glinka](https://github.com/wernerglinka)
 [license-url]: LICENSE
 [coverage-badge]: https://img.shields.io/badge/test%20coverage-025-red
 [coverage-url]: https://github.com/wernerglinka/metalsmith-site-data/actions/workflows/test.yml
+[modules-badge]: https://img.shields.io/badge/module-ESM-blue
