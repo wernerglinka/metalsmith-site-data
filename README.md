@@ -218,6 +218,6 @@ MIT © [Werner Glinka](https://github.com/wernerglinka)
 [npm-url]: https://www.npmjs.com/package/metalsmith-site-data
 [license-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [license-url]: LICENSE
-[coverage-badge]: https://img.shields.io/badge/test%20coverage-97%25-brightgreen
+[coverage-badge]: https://img.shields.io/badge/test%20coverage-025-red
 [coverage-url]: https://github.com/wernerglinka/metalsmith-site-data/actions/workflows/test.yml
 [modules-badge]: https://img.shields.io/badge/module-ESM-blue
